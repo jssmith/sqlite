@@ -1027,6 +1027,7 @@ static sqlite3_pcache_page *pcache1Fetch(
   unsigned int iKey, 
   int createFlag
 ){
+  printf("pcache2 - pcache1Fetch %d\n", iKey);
 #if PCACHE1_MIGHT_USE_GROUP_MUTEX || defined(SQLITE_DEBUG)
   PCache1 *pCache = (PCache1 *)p;
 #endif
