@@ -2886,7 +2886,17 @@ int sqlite3WalBeginWriteTransaction(Wal *pWal){
   /* Only one writer allowed at a time.  Get the write lock.  Return
   ** SQLITE_BUSY if unable.
   */
+#ifndef SHARED_LOG_REPLAY
   rc = walLockExclusive(pWal, WAL_WRITE_LOCK, 1);
+#else
+  printf("starting wal lock\n");
+  rc = sqlite3OsLock(pWal->pWalFd, SQLITE_LOCK_SHARED);
+  if( rc ){
+    return rc;
+  }
+  rc = sqlite3OsLock(pWal->pWalFd, SQLITE_LOCK_EXCLUSIVE);
+  printf("starting wal lock %d\n", rc);
+#endif
   if( rc ){
     return rc;
   }
@@ -2896,11 +2906,13 @@ int sqlite3WalBeginWriteTransaction(Wal *pWal){
   ** time the read transaction on this connection was started, then
   ** the write is disallowed.
   */
+#ifndef SHARED_LOG_REPLAY
   if( memcmp(&pWal->hdr, (void *)walIndexHdr(pWal), sizeof(WalIndexHdr))!=0 ){
     walUnlockExclusive(pWal, WAL_WRITE_LOCK, 1);
     pWal->writeLock = 0;
     rc = SQLITE_BUSY_SNAPSHOT;
   }
+#endif
 
   return rc;
 }
@@ -2912,7 +2924,11 @@ int sqlite3WalBeginWriteTransaction(Wal *pWal){
 int sqlite3WalEndWriteTransaction(Wal *pWal){
   printf("wal - WalEndWriteTransaction\n");
   if( pWal->writeLock ){
+#ifndef SHARED_LOG_REPLAY
     walUnlockExclusive(pWal, WAL_WRITE_LOCK, 1);
+#else
+    sqlite3OsUnlock(pWal->pWalFd, NO_LOCK);
+#endif
     pWal->writeLock = 0;
     pWal->iReCksum = 0;
     pWal->truncateOnCommit = 0;

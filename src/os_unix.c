@@ -5294,6 +5294,7 @@ static int fillInUnixFile(
   const char *zFilename,  /* Name of the file being opened */
   int ctrlFlags           /* Zero or more UNIXFILE_* values */
 ){
+  printf("os_unix - fillInUnixFile %s %d\n", zFilename, ctrlFlags);
   const sqlite3_io_methods *pLockingStyle;
   unixFile *pNew = (unixFile *)pId;
   int rc = SQLITE_OK;
@@ -5914,7 +5915,8 @@ static int unixOpen(
   /* Set up appropriate ctrlFlags */
   if( isDelete )                ctrlFlags |= UNIXFILE_DELETE;
   if( isReadonly )              ctrlFlags |= UNIXFILE_RDONLY;
-  noLock = eType!=SQLITE_OPEN_MAIN_DB;
+  noLock = eType!=SQLITE_OPEN_MAIN_DB && eType!=SQLITE_OPEN_WAL;
+  printf("open %s with nolock %d\n", zPath, noLock);
   if( noLock )                  ctrlFlags |= UNIXFILE_NOLOCK;
   if( syncDir )                 ctrlFlags |= UNIXFILE_DIRSYNC;
   if( flags & SQLITE_OPEN_URI ) ctrlFlags |= UNIXFILE_URI;
