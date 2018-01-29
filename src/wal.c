@@ -806,7 +806,7 @@ static const char *walLockName(int lockIdx){
 ** In locking_mode=EXCLUSIVE, all of these routines become no-ops.
 */
 static int walLockShared(Wal *pWal, int lockIdx){
-  printf("wal - walLockShared\n");
+  XTRATRACE(("wal - walLockShared\n"));
   int rc;
   if( pWal->exclusiveMode ) return SQLITE_OK;
 #ifndef SHARED_LOG_REPLAY
@@ -821,7 +821,7 @@ static int walLockShared(Wal *pWal, int lockIdx){
   return rc;
 }
 static void walUnlockShared(Wal *pWal, int lockIdx){
-  printf("wal - walUnlockShared\n");
+  XTRATRACE(("wal - walUnlockShared\n"));
   if( pWal->exclusiveMode ) return;
 #ifndef SHARED_LOG_REPLAY
   (void)sqlite3OsShmLock(pWal->pDbFd, lockIdx, 1,
@@ -830,7 +830,7 @@ static void walUnlockShared(Wal *pWal, int lockIdx){
   WALTRACE(("WAL%p: release SHARED-%s\n", pWal, walLockName(lockIdx)));
 }
 static int walLockExclusive(Wal *pWal, int lockIdx, int n) {
-  printf("wal - walLockExclusive\n");
+  XTRATRACE(("wal - walLockExclusive\n"));
   int rc;
   if (pWal->exclusiveMode) return SQLITE_OK;
 #ifndef SHARED_LOG_REPLAY
@@ -845,7 +845,7 @@ static int walLockExclusive(Wal *pWal, int lockIdx, int n) {
   return rc;
 }
 static void walUnlockExclusive(Wal *pWal, int lockIdx, int n){
-  printf("wal - walUnockExclusive\n");
+  XTRATRACE(("wal - walUnockExclusive\n"));
   if( pWal->exclusiveMode ) return;
 #ifndef SHARED_LOG_REPLAY
   (void)sqlite3OsShmLock(pWal->pDbFd, lockIdx, n,
@@ -2245,20 +2245,19 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
     sqlite3OsSleep(pWal->pVfs, nDelay);
   }
   // look at the size of the wal and compare it to what we expect
-
+#ifdef SHARED_LOG_REPLAY
   printf("tryBeginRead %d\n", useWal);
 //  pWal-pVfs
   sqlite3_int64 wal_size;
   sqlite3_int64 next_frame_offset = walFrameOffset(pWal->hdr.mxFrame+1, pWal->szPage);
   pWal->pWalFd->pMethods->xFileSize(pWal->pWalFd, &wal_size);
-  printf("log file size is %lld\n", wal_size);
+  XTRATRACE(("log file size is %lld\n", wal_size));
 
   printf("max indexed frame is %d\n", pWal->hdr.mxFrame);
   printf("page size is %d\n", pWal->szPage);
   printf("offset for next frame is %lld\n", next_frame_offset);
 //  printf("offset for indexed frame is %lld\n", WAL_HDRSIZE + ((pWal->hdr.mxFrame)-1)*(i64)((pWal->szPage)+WAL_FRAME_HDRSIZE));
 
-#ifdef SHARED_LOG_REPLAY
   if ( wal_size > 0 && next_frame_offset != wal_size ){
     if ( pWal->hdr.mxFrame == 0 ){
       printf("initialize wal index\n");
@@ -2512,13 +2511,16 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
     assert( mxReadMark<=pWal->hdr.mxFrame );
     pWal->readLock = (i16)mxI;
   }
-  printf("end of walTryBeginRead\n");
+
+  #ifdef SHARED_LOG_REPLAY
+  XTRATRACE(("end of walTryBeginRead\n"));
   next_frame_offset = walFrameOffset(pWal->hdr.mxFrame+1, pWal->szPage);
   pWal->pWalFd->pMethods->xFileSize(pWal->pWalFd, &wal_size);
   printf("end: log file size is %lld\n", wal_size);
   printf("end: max indexed frame is %d\n", pWal->hdr.mxFrame);
   printf("end: offset for next frame is %lld\n", next_frame_offset);
   printf("pWal->readLock=%d\n", pWal->readLock);
+#endif
 
   return rc;
 }
@@ -2726,7 +2728,7 @@ int sqlite3WalFindFrame(
   Pgno pgno,                      /* Database page number to read data for */
   u32 *piRead                     /* OUT: Frame number (or zero) */
 ){
-  printf("sqlite3WalFindFrame %d\n", pgno);
+  XTRATRACE(("sqlite3WalFindFrame %d\n", pgno));
   u32 iRead = 0;                  /* If !=0, WAL frame to return data from */
   u32 iLast = pWal->hdr.mxFrame;  /* Last page in WAL for this reader */
   int iHash;                      /* Used to loop through N hash tables */
@@ -2742,7 +2744,7 @@ int sqlite3WalFindFrame(
   ** WAL were empty.
   */
   if( iLast==0 || pWal->readLock==0 ){
-    printf("sqlite3WalFindFrame early exit %d %d\n", iLast, pWal->readLock);
+    XTRATRACE(("sqlite3WalFindFrame early exit %d %d\n", iLast, pWal->readLock));
     *piRead = 0;
     return SQLITE_OK;
   }
@@ -2783,7 +2785,7 @@ int sqlite3WalFindFrame(
 
     rc = walHashGet(pWal, iHash, &aHash, &aPgno, &iZero);
     if( rc!=SQLITE_OK ){
-      printf("sqlite3WalFindFrame exit on error code\n");
+      XTRATRACE(("sqlite3WalFindFrame exit on error code\n"));
       return rc;
     }
     nCollide = HASHTABLE_NSLOT;
@@ -2794,7 +2796,7 @@ int sqlite3WalFindFrame(
         iRead = iFrame;
       }
       if( (nCollide--)==0 ){
-        printf("sqlite3WalFindFrame exit on corrupt\n");
+        XTRATRACE(("sqlite3WalFindFrame exit on corrupt\n"));
         return SQLITE_CORRUPT_BKPT;
       }
     }
@@ -2871,7 +2873,7 @@ Pgno sqlite3WalDbsize(Wal *pWal){
 ** There can only be a single writer active at a time.
 */
 int sqlite3WalBeginWriteTransaction(Wal *pWal){
-  printf("wal - WalBeginWriteTransaction\n");
+  XTRATRACE(("wal - WalBeginWriteTransaction\n"));
   int rc;
 
   /* Cannot start a write transaction without first holding a read
@@ -2922,7 +2924,7 @@ int sqlite3WalBeginWriteTransaction(Wal *pWal){
 ** routine merely releases the lock.
 */
 int sqlite3WalEndWriteTransaction(Wal *pWal){
-  printf("wal - WalEndWriteTransaction\n");
+  XTRATRACE(("wal - WalEndWriteTransaction\n"));
   if( pWal->writeLock ){
 #ifndef SHARED_LOG_REPLAY
     walUnlockExclusive(pWal, WAL_WRITE_LOCK, 1);
@@ -3329,7 +3331,7 @@ int sqlite3WalFrames(
 #else
         pData = p->pData;
 #endif
-        printf("OVERWRITE???\n");
+        XTRATRACE(("OVERWRITE???\n"));
         rc = sqlite3OsWrite(pWal->pWalFd, pData, szPage, iOff);
         if( rc ) return rc;
         p->flags &= ~PGHDR_WAL_APPEND;

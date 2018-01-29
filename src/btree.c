@@ -1976,7 +1976,7 @@ static void zeroPage(MemPage *pPage, int flags){
 ** the btree layer.
 */
 static MemPage *btreePageFromDbPage(DbPage *pDbPage, Pgno pgno, BtShared *pBt){
-  printf("btree - btreePageFromDbPage %d\n", pgno);
+  XTRATRACE(("btree - btreePageFromDbPage %d\n", pgno));
   MemPage *pPage = (MemPage*)sqlite3PagerGetExtra(pDbPage);
   if( pgno!=pPage->pgno ){
     pPage->aData = sqlite3PagerGetData(pDbPage);
@@ -2065,7 +2065,7 @@ static int getAndInitPage(
   BtCursor *pCur,                 /* Cursor to receive the page, or NULL */
   int bReadOnly                   /* True for a read-only page */
 ){
-  printf("btree getAndInitPage %d\n", pgno);
+  XTRATRACE(("btree getAndInitPage %d\n", pgno));
   int rc;
   DbPage *pDbPage;
   assert( sqlite3_mutex_held(pBt->mutex) );
@@ -2082,7 +2082,7 @@ static int getAndInitPage(
     goto getAndInitPage_error;
   }
   *ppPage = (MemPage*)sqlite3PagerGetExtra(pDbPage);
-  printf("(*ppPage)->isInit %d\n", (*ppPage)->isInit);
+  XTRATRACE(("(*ppPage)->isInit %d\n", (*ppPage)->isInit));
   if( (*ppPage)->isInit==0 ){
     btreePageFromDbPage(pDbPage, pgno, pBt);
     rc = btreeInitPage(*ppPage);
@@ -4228,7 +4228,7 @@ static int btreeCursor(
   struct KeyInfo *pKeyInfo,              /* First arg to comparison function */
   BtCursor *pCur                         /* Space for new cursor */
 ){
-  printf("btreeCursor\n");
+  XTRATRACE(("btreeCursor\n"));
   BtShared *pBt = p->pBt;                /* Shared b-tree handle */
   BtCursor *pX;                          /* Looping over other all cursors */
 
@@ -8966,7 +8966,7 @@ int sqlite3BtreeUpdateMeta(Btree *p, int idx, u32 iMeta){
 ** corruption) an SQLite error code is returned.
 */
 int sqlite3BtreeCount(BtCursor *pCur, i64 *pnEntry){
-  printf("sqlite3BtreeCount\n");
+  XTRATRACE(("sqlite3BtreeCount\n"));
   i64 nEntry = 0;                      /* Value to return in *pnEntry */
   int rc;                              /* Return code */
 

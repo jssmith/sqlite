@@ -436,7 +436,7 @@ sqlite3_pcache_page *sqlite3PcacheFetch(
   Pgno pgno,            /* Page number to obtain */
   int createFlag        /* If true, create page if it does not exist already */
 ){
-  printf("pager - sqlite3PcacheFetch %d\n", pgno);
+  XTRATRACE(("pager - sqlite3PcacheFetch %d\n", pgno));
   int eCreate;
   sqlite3_pcache_page *pRes;
 
@@ -560,7 +560,7 @@ PgHdr *sqlite3PcacheFetchFinish(
   Pgno pgno,                  /* Page number obtained */
   sqlite3_pcache_page *pPage  /* Page obtained by prior PcacheFetch() call */
 ){
-  printf("pager - sqlite3PcacheFetch %d\n", pgno);
+  XTRATRACE(("pager - sqlite3PcacheFetch %d\n", pgno));
   PgHdr *pPgHdr;
 
   assert( pPage!=0 );

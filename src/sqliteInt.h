@@ -489,6 +489,12 @@
 # undef  SQLITE_HAVE_OS_TRACE
 #endif
 
+#if defined(SQLITE_DEBUG)
+#define XTRATRACE(X)  sqlite3DebugPrintf X
+#else
+#define XTRATRACE(X)
+#endif
+
 /*
 ** Is the sqlite3ErrName() function needed in the build?  Currently,
 ** it is needed by "mutex_w32.c" (when debugging), "os_win.c" (when

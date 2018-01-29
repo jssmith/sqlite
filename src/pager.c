@@ -5430,7 +5430,7 @@ static int getPageNormal(
   DbPage **ppPage,    /* Write a pointer to the page here */
   int flags           /* PAGER_GET_XXX flags */
 ){
-  printf("pager - getPageNormal %d\n", pgno);
+  XTRATRACE(("pager - getPageNormal %d\n", pgno));
   int rc = SQLITE_OK;
   PgHdr *pPg;
   u8 noContent;                   /* True if PAGER_GET_NOCONTENT is set */
@@ -5459,7 +5459,7 @@ static int getPageNormal(
 
   noContent = (flags & PAGER_GET_NOCONTENT)!=0;
   if( pPg->pPager && !noContent ){
-    printf("pager - getPageNormal %d - presentshortcut\n", pgno);
+    XTRATRACE(("pager - getPageNormal %d - presentshortcut\n", pgno));
     /* In this case the pcache already contains an initialized copy of
     ** the page. Return without further ado.  */
     assert( pgno<=PAGER_MAX_PGNO && pgno!=PAGER_MJ_PGNO(pPager) );
@@ -5482,7 +5482,7 @@ static int getPageNormal(
 
     assert( !isOpen(pPager->fd) || !MEMDB );
     if( !isOpen(pPager->fd) || pPager->dbSize<pgno || noContent ){
-      printf("pager - getPageNormal - zeroshortcut\n");
+      XTRATRACE(("pager - getPageNormal - zeroshortcut\n"));
       if( pgno>pPager->mxPgno ){
         rc = SQLITE_FULL;
         goto pager_acquire_err;
@@ -5508,7 +5508,7 @@ static int getPageNormal(
     }else{
       assert( pPg->pPager==pPager );
       pPager->aStat[PAGER_STAT_MISS]++;
-      printf("pager - getPageNormal - proceed to read\n");
+      XTRATRACE(("pager - getPageNormal - proceed to read\n"));
       rc = readDbPage(pPg);
       if( rc!=SQLITE_OK ){
         goto pager_acquire_err;
@@ -5624,7 +5624,7 @@ int sqlite3PagerGet(
   DbPage **ppPage,    /* Write a pointer to the page here */
   int flags           /* PAGER_GET_XXX flags */
 ){
-  printf("pager - sqlite3PagerGet %d\n", pgno);
+  XTRATRACE(("pager - sqlite3PagerGet %d\n", pgno));
   return pPager->xGet(pPager, pgno, ppPage, flags);
 }
 
@@ -7194,7 +7194,7 @@ void *sqlite3PagerGetData(DbPage *pPg){
 ** allocated along with the specified page.
 */
 void *sqlite3PagerGetExtra(DbPage *pPg){
-  printf("pager - sqlite3PagerGetExtra\n");
+  XTRATRACE(("pager - sqlite3PagerGetExtra\n"));
   return pPg->pExtra;
 }
 
