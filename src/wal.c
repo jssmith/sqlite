@@ -579,9 +579,6 @@ static int walIndexPage(Wal *pWal, int iPage, volatile u32 **ppPage){
 ** Return a pointer to the WalCkptInfo structure in the wal-index.
 */
 static volatile WalCkptInfo *walCkptInfo(Wal *pWal){
-//  printf("walCkptInfo\n");
-//  printf("pWal->nWiData %d\n", pWal->nWiData);
-//  printf("pWal->apWiData %d\n", pWal->apWiData);
   assert( pWal->nWiData>0 && pWal->apWiData[0] );
   return (volatile WalCkptInfo*)&(pWal->apWiData[0][sizeof(WalIndexHdr)/2]);
 }
@@ -590,9 +587,6 @@ static volatile WalCkptInfo *walCkptInfo(Wal *pWal){
 ** Return a pointer to the WalIndexHdr structure in the wal-index.
 */
 static volatile WalIndexHdr *walIndexHdr(Wal *pWal){
-//  printf("walIndexHdr\n");
-//  printf("pWal->nWiData %d\n", pWal->nWiData);
-//  printf("pWal->apWiData %d\n", pWal->apWiData);
   assert( pWal->nWiData>0 && pWal->apWiData[0] );
   return (volatile WalIndexHdr*)pWal->apWiData[0];
 }
@@ -2035,8 +2029,6 @@ static int walIndexTryHdr(Wal *pWal, int *pChanged){
   WalIndexHdr volatile *aHdr;     /* Header in shared memory */
 
   /* The first page of the wal-index must be mapped at this point. */
-//  printf("pWal->nWiData %d\n", pWal->nWiData);
-//  printf("pWal->apWiData %d\n", pWal->apWiData);
   assert( pWal->nWiData>0 && pWal->apWiData[0] );
 
   /* Read the header. This might happen concurrently with a write to the
@@ -2244,21 +2236,20 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
   }
   // look at the size of the wal and compare it to what we expect
 #ifdef SHARED_LOG_REPLAY
-  printf("tryBeginRead %d\n", useWal);
+  XTRATRACE(("tryBeginRead %d\n", useWal));
 //  pWal-pVfs
   sqlite3_int64 wal_size;
   sqlite3_int64 next_frame_offset = walFrameOffset(pWal->hdr.mxFrame+1, pWal->szPage);
   pWal->pWalFd->pMethods->xFileSize(pWal->pWalFd, &wal_size);
   XTRATRACE(("log file size is %lld\n", wal_size));
 
-  printf("max indexed frame is %d\n", pWal->hdr.mxFrame);
-  printf("page size is %d\n", pWal->szPage);
-  printf("offset for next frame is %lld\n", next_frame_offset);
-//  printf("offset for indexed frame is %lld\n", WAL_HDRSIZE + ((pWal->hdr.mxFrame)-1)*(i64)((pWal->szPage)+WAL_FRAME_HDRSIZE));
+  XTRATRACE(("max indexed frame is %d\n", pWal->hdr.mxFrame));
+  XTRATRACE(("page size is %d\n", pWal->szPage));
+  XTRATRACE(("offset for next frame is %lld\n", next_frame_offset));
 
   if ( wal_size > 0 && next_frame_offset != wal_size ){
     if ( pWal->hdr.mxFrame == 0 ){
-      printf("initialize wal index\n");
+      XTRATRACE(("initialize wal index\n"));
       // initialize wal index
       u8 aBuf[WAL_HDRSIZE];
       rc = sqlite3OsRead(pWal->pWalFd, aBuf, WAL_HDRSIZE, 0);
@@ -2315,7 +2306,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
       if( rc!=SQLITE_OK ) break;
       isValid = walDecodeFrame(pWal, &pgno, &nTruncate, aData, aFrame);
       if( !isValid ) break;
-      printf("RRRoll forward log frame %d with pgno %d\n", iFrame, pgno);
+      XTRATRACE(("RRRoll forward log frame %d with pgno %d\n", iFrame, pgno));
       rc = walIndexAppend(pWal, iFrame, pgno);
       if( rc!=SQLITE_OK ) break;
 
@@ -2376,7 +2367,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
     }
   }
 
-  printf("proceeding...\n");
+  XTRATRACE(("proceeding...\n"));
   pInfo = walCkptInfo(pWal);
   if( !useWal && pInfo->nBackfill==pWal->hdr.mxFrame 
 #ifdef SQLITE_ENABLE_SNAPSHOT
@@ -2387,7 +2378,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
     /* The WAL has been completely backfilled (or it is empty).
     ** and can be safely ignored.
     */
-    printf("ignoring wal 1\n");
+    XTRATRACE(("ignoring wal 1\n"));
     rc = walLockShared(pWal, WAL_READ_LOCK(0));
     walShmBarrier(pWal);
     if( rc==SQLITE_OK ){
@@ -2415,7 +2406,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
     }
   }
 
-  printf("will use wal\n");
+  XTRATRACE(("will use wal\n"));
 
   /* If we get this far, it means that the reader will want to use
   ** the WAL to get at content from recent commits.  The job now is
@@ -2425,7 +2416,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
   mxReadMark = 0;
   mxI = 0;
   mxFrame = pWal->hdr.mxFrame;
-  printf("mxFrame is %d\n", pWal->hdr.mxFrame);
+  XTRATRACE(("mxFrame is %d\n", pWal->hdr.mxFrame));
 #ifdef SQLITE_ENABLE_SNAPSHOT
   if( pWal->pSnapshot && pWal->pSnapshot->mxFrame<mxFrame ){
     mxFrame = pWal->pSnapshot->mxFrame;
@@ -2497,7 +2488,7 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
   ** we can guarantee that the checkpointer that set nBackfill could not
   ** see any pages past pWal->hdr.mxFrame, this problem does not come up.
   */
-  printf("read lock was obtained\n");
+  XTRATRACE(("read lock was obtained\n"));
   pWal->minFrame = pInfo->nBackfill+1;
   walShmBarrier(pWal);
   if( pInfo->aReadMark[mxI]!=mxReadMark
@@ -2514,10 +2505,10 @@ static int walTryBeginRead(Wal *pWal, int *pChanged, int useWal, int cnt){
   XTRATRACE(("end of walTryBeginRead\n"));
   next_frame_offset = walFrameOffset(pWal->hdr.mxFrame+1, pWal->szPage);
   pWal->pWalFd->pMethods->xFileSize(pWal->pWalFd, &wal_size);
-  printf("end: log file size is %lld\n", wal_size);
-  printf("end: max indexed frame is %d\n", pWal->hdr.mxFrame);
-  printf("end: offset for next frame is %lld\n", next_frame_offset);
-  printf("pWal->readLock=%d\n", pWal->readLock);
+  XTRATRACE(("end: log file size is %lld\n", wal_size));
+  XTRATRACE(("end: max indexed frame is %d\n", pWal->hdr.mxFrame));
+  XTRATRACE(("end: offset for next frame is %lld\n", next_frame_offset));
+  XTRATRACE(("pWal->readLock=%d\n", pWal->readLock));
 #endif
 
   return rc;
@@ -2889,13 +2880,13 @@ int sqlite3WalBeginWriteTransaction(Wal *pWal){
 #ifndef SHARED_LOG_REPLAY
   rc = walLockExclusive(pWal, WAL_WRITE_LOCK, 1);
 #else
-  printf("starting wal lock\n");
+  XTRATRACE(("starting wal lock\n"));
   rc = sqlite3OsLock(pWal->pWalFd, SQLITE_LOCK_SHARED);
   if( rc ){
     return rc;
   }
   rc = sqlite3OsLock(pWal->pWalFd, SQLITE_LOCK_EXCLUSIVE);
-  printf("starting wal lock %d\n", rc);
+  XTRATRACE(("starting wal lock %d\n", rc));
 #endif
   if( rc ){
     return rc;
