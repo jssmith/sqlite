@@ -244,8 +244,6 @@
 
 #include "wal.h"
 
-#define SHARED_LOG_REPLAY
-
 /*
 ** Trace output macros
 */
