@@ -2821,7 +2821,7 @@ int sqlite3WalFindFrame(
 #endif
 
   *piRead = iRead;
-  printf("sqlite3WalFindFrame found %d at %d\n", pgno, iRead);
+  XTRATRACE(("sqlite3WalFindFrame found %d at %d\n", pgno, iRead));
   return SQLITE_OK;
 }
 
@@ -2836,7 +2836,7 @@ int sqlite3WalReadFrame(
   int nOut,                       /* Size of buffer pOut in bytes */
   u8 *pOut                        /* Buffer to write page data to */
 ){
-  printf("sqlite3WalReadFrame\n");
+  XTRATRACE(("sqlite3WalReadFrame\n"));
   int sz;
   i64 iOffset;
   sz = pWal->hdr.szPage;
@@ -3135,7 +3135,7 @@ static int walWriteOneFrame(
   int nTruncate,              /* The commit flag.  Usually 0.  >0 for commit */
   sqlite3_int64 iOffset       /* Byte offset at which to write */
 ){
-  printf("write one frame at offset %lld - total written is %lld\n", iOffset, WAL_FRAME_HDRSIZE + p->szPage);
+  XTRATRACE(("write one frame at offset %lld - total written is %lld\n", iOffset, WAL_FRAME_HDRSIZE + p->szPage));
   int rc;                         /* Result code from subfunctions */
   void *pData;                    /* Data actually written */
   u8 aFrame[WAL_FRAME_HDRSIZE];   /* Buffer to assemble frame-header in */
